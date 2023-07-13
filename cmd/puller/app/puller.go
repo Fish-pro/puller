@@ -221,6 +221,7 @@ func setupControllers(mgr ctrl.Manager, opts *options.Options, stopChan <-chan s
 func StartPullerController(ctx ControllerContext) (enabled bool, err error) {
 	pullerController := &puller.Controller{
 		Client:        ctx.Mgr.GetClient(),
+		KubeClient:    ctx.KubeClientSet,
 		EventRecorder: ctx.Mgr.GetEventRecorderFor(puller.ControllerName),
 	}
 	if err := pullerController.SetupWithManager(ctx.Mgr); err != nil {

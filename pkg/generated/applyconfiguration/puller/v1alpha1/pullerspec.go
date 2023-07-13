@@ -24,7 +24,7 @@ import (
 // PullerSpecApplyConfiguration represents an declarative configuration of the PullerSpec type for use
 // with apply.
 type PullerSpecApplyConfiguration struct {
-	registries        []RegistryApplyConfiguration `json:"registries,omitempty"`
+	Registries        []RegistryApplyConfiguration `json:"registries,omitempty"`
 	NamespaceAffinity *v1.LabelSelector            `json:"namespaceAffinity,omitempty"`
 }
 
@@ -34,15 +34,15 @@ func PullerSpec() *PullerSpecApplyConfiguration {
 	return &PullerSpecApplyConfiguration{}
 }
 
-// Withregistries adds the given value to the registries field in the declarative configuration
+// WithRegistries adds the given value to the Registries field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the registries field.
-func (b *PullerSpecApplyConfiguration) Withregistries(values ...*RegistryApplyConfiguration) *PullerSpecApplyConfiguration {
+// If called multiple times, values provided by each call will be appended to the Registries field.
+func (b *PullerSpecApplyConfiguration) WithRegistries(values ...*RegistryApplyConfiguration) *PullerSpecApplyConfiguration {
 	for i := range values {
 		if values[i] == nil {
-			panic("nil value passed to Withregistries")
+			panic("nil value passed to WithRegistries")
 		}
-		b.registries = append(b.registries, *values[i])
+		b.Registries = append(b.Registries, *values[i])
 	}
 	return b
 }
