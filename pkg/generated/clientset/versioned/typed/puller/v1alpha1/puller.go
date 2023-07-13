@@ -23,9 +23,9 @@ import (
 	"fmt"
 	"time"
 
-	v1alpha1 "github.com/puller.io/puller/pkg/apis/puller/v1alpha1"
-	pullerv1alpha1 "github.com/puller.io/puller/pkg/generated/applyconfiguration/puller/v1alpha1"
-	scheme "github.com/puller.io/puller/pkg/generated/clientset/versioned/scheme"
+	v1alpha1 "github.com/puller-io/puller/pkg/apis/puller/v1alpha1"
+	pullerv1alpha1 "github.com/puller-io/puller/pkg/generated/applyconfiguration/puller/v1alpha1"
+	scheme "github.com/puller-io/puller/pkg/generated/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"

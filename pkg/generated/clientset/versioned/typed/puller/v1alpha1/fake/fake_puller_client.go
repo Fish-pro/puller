@@ -18,7 +18,7 @@ limitations under the License.
 package fake
 
 import (
-	v1alpha1 "github.com/puller.io/puller/pkg/generated/clientset/versioned/typed/puller/v1alpha1"
+	v1alpha1 "github.com/puller-io/puller/pkg/generated/clientset/versioned/typed/puller/v1alpha1"
 	rest "k8s.io/client-go/rest"
 	testing "k8s.io/client-go/testing"
 )

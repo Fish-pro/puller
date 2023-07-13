@@ -8,7 +8,7 @@ import (
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	_ "sigs.k8s.io/controller-runtime/pkg/metrics"
 
-	"github.com/puller.io/puller/cmd/puller/app"
+	"github.com/puller-io/puller/cmd/puller/app"
 )
 
 func main() {

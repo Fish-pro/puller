@@ -18,9 +18,9 @@ limitations under the License.
 package fake
 
 import (
-	clientset "github.com/puller.io/puller/pkg/generated/clientset/versioned"
-	pullerv1alpha1 "github.com/puller.io/puller/pkg/generated/clientset/versioned/typed/puller/v1alpha1"
-	fakepullerv1alpha1 "github.com/puller.io/puller/pkg/generated/clientset/versioned/typed/puller/v1alpha1/fake"
+	clientset "github.com/puller-io/puller/pkg/generated/clientset/versioned"
+	pullerv1alpha1 "github.com/puller-io/puller/pkg/generated/clientset/versioned/typed/puller/v1alpha1"
+	fakepullerv1alpha1 "github.com/puller-io/puller/pkg/generated/clientset/versioned/typed/puller/v1alpha1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"

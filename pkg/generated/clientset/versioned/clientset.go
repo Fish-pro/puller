@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"net/http"
 
-	pullerv1alpha1 "github.com/puller.io/puller/pkg/generated/clientset/versioned/typed/puller/v1alpha1"
+	pullerv1alpha1 "github.com/puller-io/puller/pkg/generated/clientset/versioned/typed/puller/v1alpha1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"

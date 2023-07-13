@@ -18,8 +18,8 @@ limitations under the License.
 package puller
 
 import (
-	internalinterfaces "github.com/puller.io/puller/pkg/generated/informers/externalversions/internalinterfaces"
-	v1alpha1 "github.com/puller.io/puller/pkg/generated/informers/externalversions/puller/v1alpha1"
+	internalinterfaces "github.com/puller-io/puller/pkg/generated/informers/externalversions/internalinterfaces"
+	v1alpha1 "github.com/puller-io/puller/pkg/generated/informers/externalversions/puller/v1alpha1"
 )
 
 // Interface provides access to each of this group's versions.
