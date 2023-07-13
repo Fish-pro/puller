@@ -31,7 +31,7 @@ type PullerList struct {
 // PullerSpec defines the desired state of Puller
 type PullerSpec struct {
 	// +kubebuilder:validation:Optional
-	registries []Registry `json:"registries,omitempty"`
+	Registries []Registry `json:"registries,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	NamespaceAffinity *metav1.LabelSelector `json:"namespaceAffinity,omitempty"`
