@@ -26,9 +26,6 @@ type Options struct {
 	ConcurrentPullerSyncs int
 
 	Logs *logs.Options
-
-	Master     string
-	Kubeconfig string
 }
 
 func NewOptions() *Options {
@@ -53,6 +50,4 @@ func (o *Options) AddFlags(fs *pflag.FlagSet, allControllers []string) {
 	fs.Float32Var(&o.KubeAPIQPS, "kube-api-qps", 40.0, "QPS to use while talking with karmada-apiserver. Doesn't cover events and node heartbeat apis which rate limiting is controlled by a different set of flags.")
 	fs.IntVar(&o.KubeAPIBurst, "kube-api-burst", 60, "Burst to use while talking with karmada-apiserver. Doesn't cover events and node heartbeat apis which rate limiting is controlled by a different set of flags.")
 	fs.IntVar(&o.ConcurrentPullerSyncs, "concurrent-puller-syncs", 5, "The number of Puller that are allowed to sync concurrently.")
-	fs.StringVar(&o.Master, "master", o.Master, "The address of the Kubernetes API server (overrides any value in kubeconfig).")
-	fs.StringVar(&o.Kubeconfig, "kubeconfig", o.Kubeconfig, "Path to kubeconfig file with authorization and master location information.")
 }
