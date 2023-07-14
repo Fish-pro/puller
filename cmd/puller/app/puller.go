@@ -78,7 +78,8 @@ func Run(ctx context.Context, opts *options.Options) error {
 
 	config, err := ctrl.GetConfig()
 	if err != nil {
-		panic(err)
+		logger.Error(err, "failed to get config")
+		return err
 	}
 	config.QPS, config.Burst = opts.KubeAPIQPS, opts.KubeAPIBurst
 	mgr, err := ctrl.NewManager(config, ctrl.Options{
