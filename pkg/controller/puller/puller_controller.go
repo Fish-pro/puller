@@ -3,8 +3,10 @@ package puller
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -41,14 +43,15 @@ func (c *Controller) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	logger := log.FromContext(ctx)
 	logger.V(4).Info("Reconciling puller", "name", req.NamespacedName.Name)
 
-	puller := pullerv1alpha1.Puller{}
-	err := c.Client.Get(ctx, req.NamespacedName, &puller)
+	obj := pullerv1alpha1.Puller{}
+	err := c.Client.Get(ctx, req.NamespacedName, &obj)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return ctrl.Result{}, nil
 		}
 		return ctrl.Result{Requeue: true}, err
 	}
+	puller := obj.DeepCopy()
 
 	var nsList *corev1.NamespaceList
 	if puller.Spec.NamespaceAffinity == nil {
@@ -83,11 +86,43 @@ func (c *Controller) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			errs = append(errs, err)
 		}
 	}
-	if len(errs) != 0 {
-		return ctrl.Result{Requeue: true}, utilerrors.NewAggregate(errs)
+
+	newStatus := puller.Status
+	if err := utilerrors.NewAggregate(errs); err != nil {
+		SetReadyUnknownCondition(&newStatus, "Error", "puller reconcile error")
+		SetErrorCondition(&newStatus, "ErrorSeen", err.Error())
+	} else {
+		SetReadyCondition(&newStatus, "Ready", "puller reconcile ready")
+		ClearErrorCondition(&newStatus)
+	}
+
+	if err := c.UpdateStatusIfNeed(ctx, &obj, newStatus); err != nil {
+		return ctrl.Result{Requeue: true}, err
 	}
 
 	return ctrl.Result{}, nil
+}
+
+func (c *Controller) UpdateStatusIfNeed(ctx context.Context, puller *pullerv1alpha1.Puller, newStatus pullerv1alpha1.PullerStatus) error {
+	logger := log.FromContext(ctx)
+	if !equality.Semantic.DeepEqual(puller.Status, newStatus) {
+		puller.Status = newStatus
+		return retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			updateErr := c.Client.Status().Update(ctx, puller)
+			if updateErr == nil {
+				return nil
+			}
+			updated := &pullerv1alpha1.Puller{}
+			if err := c.Client.Get(context.TODO(), client.ObjectKey{Name: puller.Name}, updated); err == nil {
+				puller = updated.DeepCopy()
+				puller.Status = newStatus
+			} else {
+				logger.Error(err, fmt.Sprintf("Failed to create/update puller %s/%s", puller.GetNamespace(), puller.GetName()))
+			}
+			return updateErr
+		})
+	}
+	return nil
 }
 
 func (c *Controller) ensureSecret(ctx context.Context, secret *corev1.Secret) error {
@@ -199,7 +234,7 @@ func (c *Controller) SetupWithManager(mgr ctrl.Manager) error {
 				c.namespaceWatcherFunc(ctx, createEvent.Object, limitingInterface)
 			},
 		}).
-		Watches(&corev1.Namespace{}, &handler.Funcs{
+		Watches(&corev1.Secret{}, &handler.Funcs{
 			DeleteFunc: func(ctx context.Context, deleteEvent event.DeleteEvent, limitingInterface workqueue.RateLimitingInterface) {
 				c.secretWatcherFunc(ctx, deleteEvent.Object, limitingInterface)
 			},

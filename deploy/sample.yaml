@@ -1,0 +1,9 @@
+apiVersion: "puller.io/v1alpha1"
+kind: "Puller"
+metadata:
+  name: puller-sample
+spec:
+  registries:
+    - server: "harbor.test.io"
+      username: "username"
+      password: "password"

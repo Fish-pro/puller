@@ -17,10 +17,14 @@ limitations under the License.
 
 package v1alpha1
 
+import (
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
 // PullerStatusApplyConfiguration represents an declarative configuration of the PullerStatus type for use
 // with apply.
 type PullerStatusApplyConfiguration struct {
-	Namespaces []string `json:"namespaces,omitempty"`
+	Conditions []v1.Condition `json:"conditions,omitempty"`
 }
 
 // PullerStatusApplyConfiguration constructs an declarative configuration of the PullerStatus type for use with
@@ -29,12 +33,12 @@ func PullerStatus() *PullerStatusApplyConfiguration {
 	return &PullerStatusApplyConfiguration{}
 }
 
-// WithNamespaces adds the given value to the Namespaces field in the declarative configuration
+// WithConditions adds the given value to the Conditions field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the Namespaces field.
-func (b *PullerStatusApplyConfiguration) WithNamespaces(values ...string) *PullerStatusApplyConfiguration {
+// If called multiple times, values provided by each call will be appended to the Conditions field.
+func (b *PullerStatusApplyConfiguration) WithConditions(values ...v1.Condition) *PullerStatusApplyConfiguration {
 	for i := range values {
-		b.Namespaces = append(b.Namespaces, values[i])
+		b.Conditions = append(b.Conditions, values[i])
 	}
 	return b
 }

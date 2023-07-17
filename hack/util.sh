@@ -7,7 +7,7 @@ set -o pipefail
 PULLER_GO_PACKAGE="github.com/puller-io/puller"
 
 PULLER_TARGET_SOURCE=(
-  puller-controller-manager=cmd/puller
+  puller=cmd/puller
 )
 
 # This script holds common bash variables and utility functions.

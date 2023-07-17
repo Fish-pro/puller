@@ -35,8 +35,8 @@ func NewControllerManagerCommand(ctx context.Context) *cobra.Command {
 	o := options.NewOptions()
 
 	cmd := &cobra.Command{
-		Use:   "puller-controller-manager",
-		Short: "puller-controller-manager is a controller manager for pull private image",
+		Use:   "puller",
+		Short: "puller is a controller manager for pull private image",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Activate logging as soon as possible, after that
 			// show flags with the final logging configuration.
@@ -63,9 +63,14 @@ func NewControllerManagerCommand(ctx context.Context) *cobra.Command {
 	fss := cliflag.NamedFlagSets{}
 	genericFlagSet := fss.FlagSet("generic")
 	genericFlagSet.AddGoFlagSet(flag.CommandLine)
+	genericFlagSet.Lookup("kubeconfig").Usage = "Paths to a kubeconfig. Only required if out-of-cluster."
 	o.AddFlags(genericFlagSet, controllers.ControllerNames())
 
-	logsapi.AddFlags(o.Logs, fss.FlagSet("logs"))
+	logsFlagSet := fss.FlagSet("logs")
+	logsapi.AddFlags(o.Logs, logsFlagSet)
+
+	cmd.Flags().AddFlagSet(genericFlagSet)
+	cmd.Flags().AddFlagSet(logsFlagSet)
 	return cmd
 }
 
