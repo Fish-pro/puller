@@ -9,6 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -18,6 +19,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -30,10 +32,12 @@ const (
 	ControllerName = "puller-controller"
 	SecretName     = "puller-config"
 	SecretLabelKey = "puller.io/name"
+	FinalizerKey   = "puller.io/finalizer"
 )
 
 type Controller struct {
 	client.Client
+	Scheme        *runtime.Scheme
 	KubeClient    kubernetes.Interface
 	EventRecorder record.EventRecorder
 }
@@ -53,57 +57,42 @@ func (c *Controller) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 	puller := obj.DeepCopy()
 
-	var nsList *corev1.NamespaceList
-	if puller.Spec.NamespaceAffinity == nil {
-		nsList, err = c.KubeClient.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
-		if err != nil {
-			logger.Error(err, "failed to list all namespace")
-			return ctrl.Result{Requeue: true}, err
-		}
-	} else {
-		nsList, err = c.KubeClient.CoreV1().Namespaces().List(ctx, metav1.ListOptions{
-			LabelSelector: puller.Spec.NamespaceAffinity.String(),
-		})
-		if err != nil {
-			logger.Error(err, "failed to list namespace")
-			return ctrl.Result{Requeue: true}, err
-		}
+	if !puller.DeletionTimestamp.IsZero() {
+		return c.cleanImageSecretName(ctx, puller)
 	}
 
-	var errs []error
-	for _, ns := range nsList.Items {
-		secret, err := newDockerSecret(SecretName, puller.Name, puller.Spec.Registries)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-		secret.SetNamespace(ns.Name)
-		if err := c.ensureSecret(ctx, secret); err != nil {
-			errs = append(errs, err)
-			continue
-		}
-		if err := c.ensurerServiceAccount(ctx, ns.Name, SecretName); err != nil {
-			errs = append(errs, err)
-		}
+	return c.syncPuller(ctx, puller)
+}
+
+func (c *Controller) removeFinalizer(puller *pullerv1alpha1.Puller) (ctrl.Result, error) {
+	if !controllerutil.ContainsFinalizer(puller, FinalizerKey) {
+		return ctrl.Result{}, nil
 	}
 
-	newStatus := puller.Status
-	if err := utilerrors.NewAggregate(errs); err != nil {
-		SetReadyUnknownCondition(&newStatus, "Error", "puller reconcile error")
-		SetErrorCondition(&newStatus, "ErrorSeen", err.Error())
-	} else {
-		SetReadyCondition(&newStatus, "Ready", "puller reconcile ready")
-		ClearErrorCondition(&newStatus)
-	}
-
-	if err := c.UpdateStatusIfNeed(ctx, &obj, newStatus); err != nil {
+	controllerutil.RemoveFinalizer(puller, FinalizerKey)
+	err := c.Client.Update(context.TODO(), puller)
+	if err != nil {
 		return ctrl.Result{Requeue: true}, err
 	}
 
 	return ctrl.Result{}, nil
 }
 
-func (c *Controller) UpdateStatusIfNeed(ctx context.Context, puller *pullerv1alpha1.Puller, newStatus pullerv1alpha1.PullerStatus) error {
+func (c *Controller) ensureFinalizer(puller *pullerv1alpha1.Puller) (ctrl.Result, error) {
+	if controllerutil.ContainsFinalizer(puller, FinalizerKey) {
+		return ctrl.Result{}, nil
+	}
+
+	controllerutil.AddFinalizer(puller, FinalizerKey)
+	err := c.Client.Update(context.TODO(), puller)
+	if err != nil {
+		return ctrl.Result{Requeue: true}, err
+	}
+
+	return ctrl.Result{}, nil
+}
+
+func (c *Controller) updateStatusIfNeed(ctx context.Context, puller *pullerv1alpha1.Puller, newStatus pullerv1alpha1.PullerStatus) error {
 	logger := log.FromContext(ctx)
 	if !equality.Semantic.DeepEqual(puller.Status, newStatus) {
 		puller.Status = newStatus
@@ -224,6 +213,107 @@ func buildDockerConfigJSON(registries []pullerv1alpha1.Registry) ([]byte, error)
 		return nil, err
 	}
 	return content, nil
+}
+
+func (c *Controller) syncPuller(ctx context.Context, puller *pullerv1alpha1.Puller) (ctrl.Result, error) {
+	logger := log.FromContext(ctx)
+	var (
+		err    error
+		nsList *corev1.NamespaceList
+	)
+	if puller.Spec.NamespaceAffinity == nil {
+		nsList, err = c.KubeClient.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
+		if err != nil {
+			logger.Error(err, "failed to list all namespace")
+			return ctrl.Result{Requeue: true}, err
+		}
+	} else {
+		nsList, err = c.KubeClient.CoreV1().Namespaces().List(ctx, metav1.ListOptions{
+			LabelSelector: puller.Spec.NamespaceAffinity.String(),
+		})
+		if err != nil {
+			logger.Error(err, "failed to list namespace")
+			return ctrl.Result{Requeue: true}, err
+		}
+	}
+
+	var errs []error
+	for _, ns := range nsList.Items {
+		secret, err := newDockerSecret(SecretName, puller.Name, puller.Spec.Registries)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		secret.SetNamespace(ns.Name)
+		if err := controllerutil.SetOwnerReference(puller, secret, c.Scheme); err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		if err := c.ensureSecret(ctx, secret); err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		if err := c.ensurerServiceAccount(ctx, ns.Name, SecretName); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	newStatus := puller.Status.DeepCopy()
+	if err := utilerrors.NewAggregate(errs); err != nil {
+		SetReadyUnknownCondition(newStatus, "Error", "puller reconcile error")
+		SetErrorCondition(newStatus, "ErrorSeen", err.Error())
+	} else {
+		SetReadyCondition(newStatus, "Ready", "puller reconcile ready")
+		ClearErrorCondition(newStatus)
+	}
+
+	if err := c.updateStatusIfNeed(ctx, puller, *newStatus); err != nil {
+		return ctrl.Result{Requeue: true}, err
+	}
+
+	return c.ensureFinalizer(puller)
+}
+
+func (c *Controller) cleanImageSecretName(ctx context.Context, puller *pullerv1alpha1.Puller) (ctrl.Result, error) {
+	saList, err := c.KubeClient.CoreV1().ServiceAccounts(corev1.NamespaceAll).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return ctrl.Result{Requeue: true}, err
+	}
+
+	var errs []error
+	for _, sa := range saList.Items {
+		found := false
+		for i, im := range sa.ImagePullSecrets {
+			if im.Name == SecretName {
+				sa.ImagePullSecrets = append(sa.ImagePullSecrets[:i], sa.ImagePullSecrets[i+1:]...)
+				found = true
+				break
+			}
+		}
+		if found {
+			err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+				got, err := c.KubeClient.CoreV1().ServiceAccounts(sa.Namespace).Get(ctx, sa.Name, metav1.GetOptions{})
+				if err != nil && apierrors.IsNotFound(err) {
+					return nil
+				} else if err != nil {
+					return err
+				}
+				sa.SetResourceVersion(got.ResourceVersion)
+				_, err = c.KubeClient.CoreV1().ServiceAccounts(sa.Namespace).Update(ctx, &sa, metav1.UpdateOptions{})
+				if err != nil {
+					return err
+				}
+				return nil
+			})
+			if err != nil {
+				errs = append(errs, err)
+			}
+		}
+	}
+	if len(errs) != 0 {
+		return ctrl.Result{Requeue: true}, utilerrors.NewAggregate(errs)
+	}
+	return c.removeFinalizer(puller)
 }
 
 // SetupWithManager sets up the controller with the Manager.

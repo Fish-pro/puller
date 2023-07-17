@@ -9,6 +9,8 @@ import (
 // +kubebuilder:resource:scope="Cluster",singular="puller",path="pullers"
 // +kubebuilder:subresource:status
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+//+kubebuilder:printcolumn:name="Ready",type=string,description="Report the puller ready status",JSONPath=`.status.conditions[?(@.type=="Ready")].status`,priority=0
+//+kubebuilder:printcolumn:name="Age",type=date,description="The creation date",JSONPath=`.metadata.creationTimestamp`,priority=0
 
 // Puller is the Schema for the fast api
 type Puller struct {
