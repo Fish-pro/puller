@@ -57,5 +57,5 @@ type Registry struct {
 // PullerStatus defines the observed state of Puller
 type PullerStatus struct {
 	// +kubebuilder:validation:Optional
-	Namespaces []string `json:"namespaces,omitempty"`
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }

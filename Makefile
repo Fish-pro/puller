@@ -3,7 +3,7 @@ GOARCH ?= $(shell go env GOARCH)
 VERSION = "latest"
 REGISTRY = "fishpro3/puller"
 
-TARGETS := puller-controller-manager
+TARGETS := puller
 
 CMD_TARGET=$(TARGETS)
 
