@@ -217,6 +217,7 @@ func buildDockerConfigJSON(registries []pullerv1alpha1.Registry) ([]byte, error)
 
 func (c *Controller) syncPuller(ctx context.Context, puller *pullerv1alpha1.Puller) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
+
 	var (
 		err    error
 		nsList *corev1.NamespaceList
@@ -316,22 +317,6 @@ func (c *Controller) cleanImageSecretName(ctx context.Context, puller *pullerv1a
 	return c.removeFinalizer(puller)
 }
 
-// SetupWithManager sets up the controller with the Manager.
-func (c *Controller) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).For(&pullerv1alpha1.Puller{}).
-		Watches(&corev1.Namespace{}, &handler.Funcs{
-			CreateFunc: func(ctx context.Context, createEvent event.CreateEvent, limitingInterface workqueue.RateLimitingInterface) {
-				c.namespaceWatcherFunc(ctx, createEvent.Object, limitingInterface)
-			},
-		}).
-		Watches(&corev1.Secret{}, &handler.Funcs{
-			DeleteFunc: func(ctx context.Context, deleteEvent event.DeleteEvent, limitingInterface workqueue.RateLimitingInterface) {
-				c.secretWatcherFunc(ctx, deleteEvent.Object, limitingInterface)
-			},
-		}).
-		Complete(c)
-}
-
 func (c *Controller) namespaceWatcherFunc(ctx context.Context, obj client.Object, limitingInterface workqueue.RateLimitingInterface) {
 	pullerList := pullerv1alpha1.PullerList{}
 	if err := c.Client.List(ctx, &pullerList); err != nil {
@@ -358,4 +343,20 @@ func (c *Controller) secretWatcherFunc(ctx context.Context, obj client.Object, l
 		Name:      puller.GetName(),
 		Namespace: puller.GetNamespace(),
 	}})
+}
+
+// SetupWithManager sets up the controller with the Manager.
+func (c *Controller) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).For(&pullerv1alpha1.Puller{}).
+		Watches(&corev1.Namespace{}, &handler.Funcs{
+			CreateFunc: func(ctx context.Context, createEvent event.CreateEvent, limitingInterface workqueue.RateLimitingInterface) {
+				c.namespaceWatcherFunc(ctx, createEvent.Object, limitingInterface)
+			},
+		}).
+		Watches(&corev1.Secret{}, &handler.Funcs{
+			DeleteFunc: func(ctx context.Context, deleteEvent event.DeleteEvent, limitingInterface workqueue.RateLimitingInterface) {
+				c.secretWatcherFunc(ctx, deleteEvent.Object, limitingInterface)
+			},
+		}).
+		Complete(c)
 }

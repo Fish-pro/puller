@@ -237,7 +237,6 @@ rules:
       - serviceaccount
       - serviceaccount/status
       - namespace
-      - namespaces/status
     verbs:
       - create
       - delete
