@@ -195,56 +195,8 @@ apiVersion: v1
 kind: Namespace
 metadata:
   labels:
-    control-plane: controller-manager
+    app: puller
   name: puller-system
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: puller-role
-rules:
-  - apiGroups:
-      - puller.io
-    resources:
-      - pullers
-    verbs:
-      - create
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
-  - apiGroups:
-      - puller.io
-    resources:
-      - pullers/finalizers
-    verbs:
-      - update
-  - apiGroups:
-      - puller.io
-    resources:
-      - pullers/status
-    verbs:
-      - get
-      - patch
-      - update
-  - apiGroups:
-      - ""
-    resources:
-      - secret
-      - secret/status
-      - serviceaccount
-      - serviceaccount/status
-      - namespace
-    verbs:
-      - create
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -259,7 +211,7 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: puller-role
+  name: cluster-admin
 subjects:
   - kind: ServiceAccount
     name: puller
@@ -286,11 +238,12 @@ spec:
         - args:
             - --health-probe-bind-address=:8081
             - --metrics-bind-address=127.0.0.1:8080
-            - --leader-elect
+            - --leader-elect=false
             - --v=6
           command:
-            - /puller
+            - /bin/puller
           image: fishpro3/puller/puller:latest
+          imagePullPolicy: IfNotPresent
           livenessProbe:
             httpGet:
               path: /healthz

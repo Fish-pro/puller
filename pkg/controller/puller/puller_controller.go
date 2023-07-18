@@ -2,6 +2,7 @@ package puller
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 
@@ -175,7 +176,7 @@ func (c *Controller) ensurerServiceAccount(ctx context.Context, namespace string
 	return utilerrors.NewAggregate(errs)
 }
 
-func newDockerSecret(name, pullerName string, registries []pullerv1alpha1.Registry) (*corev1.Secret, error) {
+func newDockerSecret(name string, registries []pullerv1alpha1.Registry) (*corev1.Secret, error) {
 	content, err := buildDockerConfigJSON(registries)
 	if err != nil {
 		return nil, err
@@ -188,7 +189,7 @@ func newDockerSecret(name, pullerName string, registries []pullerv1alpha1.Regist
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 			Labels: map[string]string{
-				SecretLabelKey: pullerName,
+				SecretLabelKey: name,
 			},
 		},
 		Type: corev1.SecretTypeDockerConfigJson,
@@ -198,17 +199,28 @@ func newDockerSecret(name, pullerName string, registries []pullerv1alpha1.Regist
 	}, nil
 }
 
+func encodeDockerConfigFieldAuth(username, password string) string {
+	fieldValue := username + ":" + password
+	return base64.StdEncoding.EncodeToString([]byte(fieldValue))
+}
+
 func buildDockerConfigJSON(registries []pullerv1alpha1.Registry) ([]byte, error) {
 	data := make(map[string]pullerv1alpha1.Registry)
 	for _, r := range registries {
-		data[r.Server] = pullerv1alpha1.Registry{
+		reg := pullerv1alpha1.Registry{
 			Username: r.Username,
 			Password: r.Password,
 			Email:    r.Email,
 			Auth:     r.Auth,
 		}
+		if len(reg.Auth) == 0 {
+			reg.Auth = encodeDockerConfigFieldAuth(r.Username, r.Password)
+		}
+		data[r.Server] = reg
 	}
-	content, err := json.Marshal(data)
+	content, err := json.Marshal(map[string]map[string]pullerv1alpha1.Registry{
+		"auths": data,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -240,7 +252,7 @@ func (c *Controller) syncPuller(ctx context.Context, puller *pullerv1alpha1.Pull
 
 	var errs []error
 	for _, ns := range nsList.Items {
-		secret, err := newDockerSecret(SecretName, puller.Name, puller.Spec.Registries)
+		secret, err := newDockerSecret(puller.Name, puller.Spec.Registries)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -254,7 +266,7 @@ func (c *Controller) syncPuller(ctx context.Context, puller *pullerv1alpha1.Pull
 			errs = append(errs, err)
 			continue
 		}
-		if err := c.ensurerServiceAccount(ctx, ns.Name, SecretName); err != nil {
+		if err := c.ensurerServiceAccount(ctx, ns.Name, puller.Name); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -285,7 +297,7 @@ func (c *Controller) cleanImageSecretName(ctx context.Context, puller *pullerv1a
 	for _, sa := range saList.Items {
 		found := false
 		for i, im := range sa.ImagePullSecrets {
-			if im.Name == SecretName {
+			if im.Name == puller.Name {
 				sa.ImagePullSecrets = append(sa.ImagePullSecrets[:i], sa.ImagePullSecrets[i+1:]...)
 				found = true
 				break
