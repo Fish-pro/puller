@@ -107,7 +107,6 @@ busybox-76b8f599f5-4n8ls   1/1     Running   0          13s
 busybox-76b8f599f5-6tf79   1/1     Running   0          11s
 ```
 
-
 ## Local build image
 
 Clone the repo locally and execute
