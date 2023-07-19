@@ -7,6 +7,38 @@ Puller is a controller that helps kubernetes pull private images
 
 ## Quick Start
 
+### Installation
+
+#### Quick installation with all-in-one
+
+```shell
+kubectl apply -f https://raw.githubusercontent.com/Fish-pro/puller/main/deploy/all-in-one.yaml
+```
+
+We can see that `puller-controller` is installed in the puller-system namespace
+
+```
+[root@york-master ~]# kubectl -n puller-system get po
+NAME                    READY   STATUS    RESTARTS   AGE
+puller-f75fcfd7-fl6mk   1/1     Running   0          12s
+```
+
+#### Quick installation with Helm
+
+```shell
+git clone https://github.com/Fish-pro/puller.git
+cd puller
+helm install puller ./charts/puller -n puller --create-namespace
+```
+
+We can see that `puller-controller` is installed in the puller namespace
+
+```
+[root@york-master ~]# kubectl -n puller get po
+NAME                      READY   STATUS    RESTARTS   AGE
+puller-68bcf6c4db-r2nwg   1/1     Running   0          27s
+```
+
 ### Create an application
 
 ```shell
@@ -58,9 +90,9 @@ metadata:
   name: puller-sample
 spec:
   registries:
-    - server: "https://release.daocloud.io"
-      username: "<docker-username>"
-      password: "<docker-password>"
+    - server: "https://release.daocloud.io" # Replace with docker server
+      username: "<docker-username>" # Replace with docker username
+      password: "<docker-password>" # Replace with docker password
 EOF
 ```
 
@@ -75,29 +107,6 @@ busybox-76b8f599f5-4n8ls   1/1     Running   0          13s
 busybox-76b8f599f5-6tf79   1/1     Running   0          11s
 ```
 
-## Installation
-
-### Quick installation with all-in-one
-
-```shell
-kubectl apply -f https://raw.githubusercontent.com/Fish-pro/puller/main/deploy/all-in-one.yaml
-```
-
-We can see that `puller-controller` is installed in the puller-system namespace
-
-```
-[root@york-master ~]# kubectl -n puller-system get po
-NAME                    READY   STATUS    RESTARTS   AGE
-puller-f75fcfd7-fl6mk   1/1     Running   0          12s
-```
-
-### Quick installation with Helm
-
-```shell
-helm repo add puller-charts https://raw.githubusercontent.com/Fish-pro/puller/main/charts
-helm repo update
-helm install puller puller-charts/puller -n puller --create-namespace
-```
 
 ## Local build image
 
