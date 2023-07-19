@@ -7,22 +7,6 @@ Puller is a controller that helps kubernetes pull private images
 
 ## Quick Start
 
-### Installation
-
-Quick installation with all-in-one
-
-```shell
-kubectl apply -f https://raw.githubusercontent.com/Fish-pro/puller/main/deploy/all-in-one.yaml
-```
-
-We can see that `puller-controller` is installed in the puller-system namespace
-
-```
-[root@york-master ~]# kubectl -n puller-system get po
-NAME                    READY   STATUS    RESTARTS   AGE
-puller-f75fcfd7-fl6mk   1/1     Running   0          12s
-```
-
 ### Create an application
 
 ```shell
@@ -55,7 +39,7 @@ spec:
 EOF
 ```
 
-Failed to pull a private image after the application was created. 
+Failed to pull a private image after the application was created.
 
 ```shell
 [root@york-master ~]# kubectl get po
@@ -91,7 +75,31 @@ busybox-76b8f599f5-4n8ls   1/1     Running   0          13s
 busybox-76b8f599f5-6tf79   1/1     Running   0          11s
 ```
 
-### Local build image
+## Installation
+
+### Quick installation with all-in-one
+
+```shell
+kubectl apply -f https://raw.githubusercontent.com/Fish-pro/puller/main/deploy/all-in-one.yaml
+```
+
+We can see that `puller-controller` is installed in the puller-system namespace
+
+```
+[root@york-master ~]# kubectl -n puller-system get po
+NAME                    READY   STATUS    RESTARTS   AGE
+puller-f75fcfd7-fl6mk   1/1     Running   0          12s
+```
+
+### Quick installation with Helm
+
+```shell
+helm repo add puller-charts https://raw.githubusercontent.com/Fish-pro/puller/main/charts
+helm repo update
+helm install puller puller-charts/puller -n puller --create-namespace
+```
+
+## Local build image
 
 Clone the repo locally and execute
 
