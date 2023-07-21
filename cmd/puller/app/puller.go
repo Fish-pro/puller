@@ -23,7 +23,7 @@ import (
 	pullerv1alpha1 "github.com/puller-io/puller/pkg/apis/puller/v1alpha1"
 	clientbuilder "github.com/puller-io/puller/pkg/builder"
 	"github.com/puller-io/puller/pkg/controller/puller"
-	"github.com/puller-io/puller/pkg/util/gclient"
+	"github.com/puller-io/puller/pkg/scheme"
 	"github.com/puller-io/puller/pkg/version"
 )
 
@@ -88,12 +88,18 @@ func Run(ctx context.Context, opts *options.Options) error {
 	}
 	config.QPS, config.Burst = opts.KubeAPIQPS, opts.KubeAPIBurst
 	mgr, err := ctrl.NewManager(config, ctrl.Options{
-		Logger:                 logger,
-		Scheme:                 gclient.NewSchema(),
-		MetricsBindAddress:     opts.MetricsAddr,
-		HealthProbeBindAddress: opts.ProbeAddr,
-		LeaderElection:         opts.EnableLeaderElection,
-		LeaderElectionID:       "688adee7.puller.io",
+		Logger:                     logger,
+		Scheme:                     scheme.Scheme,
+		SyncPeriod:                 &opts.ResyncPeriod.Duration,
+		LeaderElection:             opts.LeaderElection.LeaderElect,
+		LeaderElectionID:           opts.LeaderElection.ResourceName,
+		LeaderElectionNamespace:    opts.LeaderElection.ResourceNamespace,
+		LeaseDuration:              &opts.LeaderElection.LeaseDuration.Duration,
+		RenewDeadline:              &opts.LeaderElection.RenewDeadline.Duration,
+		RetryPeriod:                &opts.LeaderElection.RetryPeriod.Duration,
+		LeaderElectionResourceLock: opts.LeaderElection.ResourceLock,
+		MetricsBindAddress:         opts.MetricsAddr,
+		HealthProbeBindAddress:     opts.ProbeAddr,
 		BaseContext: func() context.Context {
 			return ctx
 		},
