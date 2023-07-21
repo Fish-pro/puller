@@ -31,7 +31,6 @@ import (
 
 const (
 	ControllerName = "puller-controller"
-	SecretName     = "puller-config"
 	SecretLabelKey = "puller.io/name"
 	FinalizerKey   = "puller.io/finalizer"
 )

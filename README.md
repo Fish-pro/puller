@@ -15,12 +15,12 @@ Puller is a controller that helps kubernetes pull private images
 kubectl apply -f https://raw.githubusercontent.com/Fish-pro/puller/main/deploy/all-in-one.yaml
 ```
 
-We can see that `puller-controller` is installed in the puller-system namespace
+We can see that `puller` is installed in the puller namespace
 
 ```
-[root@york-master ~]# kubectl -n puller-system get po
-NAME                    READY   STATUS    RESTARTS   AGE
-puller-f75fcfd7-fl6mk   1/1     Running   0          12s
+[root@york-master ~]# kubectl -n puller get po
+NAME                      READY   STATUS    RESTARTS   AGE
+puller-6b688c585b-5cbfq   1/1     Running   0          20s
 ```
 
 #### Quick installation with Helm
@@ -31,7 +31,7 @@ cd puller
 helm install puller ./charts/puller -n puller --create-namespace
 ```
 
-We can see that `puller-controller` is installed in the puller namespace
+We can see that `puller` is installed in the puller namespace
 
 ```
 [root@york-master ~]# kubectl -n puller get po

@@ -196,13 +196,13 @@ kind: Namespace
 metadata:
   labels:
     app: puller
-  name: puller-system
+  name: puller
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: puller
-  namespace: puller-system
+  namespace: puller
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -283,7 +283,7 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: puller
-    namespace: puller-system
+    namespace: puller
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -291,7 +291,7 @@ metadata:
   labels:
     app: puller
   name: puller
-  namespace: puller-system
+  namespace: puller
 spec:
   replicas: 1
   selector:
@@ -306,7 +306,7 @@ spec:
         - args:
             - --health-probe-bind-address=:8081
             - --metrics-bind-address=127.0.0.1:8080
-            - --leader-elect=false
+            - --leader-elect
             - --v=6
           command:
             - /bin/puller
