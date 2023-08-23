@@ -8,7 +8,6 @@ import (
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	componentbaseconfig "k8s.io/component-base/config"
 	"k8s.io/component-base/config/options"
-	"k8s.io/component-base/logs"
 )
 
 type Options struct {
@@ -30,13 +29,10 @@ type Options struct {
 	// ConcurrentPullerSyncs is the number of puller objects that are
 	// allowed to sync concurrently.
 	ConcurrentPullerSyncs int
-
-	Logs *logs.Options
 }
 
 func NewOptions() *Options {
 	return &Options{
-		Logs: logs.NewOptions(),
 		LeaderElection: componentbaseconfig.LeaderElectionConfiguration{
 			LeaderElect:       true,
 			LeaseDuration:     metav1.Duration{Duration: 15 * time.Second},

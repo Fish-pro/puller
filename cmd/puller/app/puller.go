@@ -7,11 +7,8 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/client-go/kubernetes"
 	cliflag "k8s.io/component-base/cli/flag"
-	logsapi "k8s.io/component-base/logs/api/v1"
 	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	ctrlconfig "sigs.k8s.io/controller-runtime/pkg/config"
@@ -24,10 +21,6 @@ import (
 	"github.com/puller-io/puller/pkg/version"
 )
 
-func init() {
-	utilruntime.Must(logsapi.AddFeatureGates(utilfeature.DefaultMutableFeatureGate))
-}
-
 func NewControllerManagerCommand(ctx context.Context) *cobra.Command {
 	o := options.NewOptions()
 
@@ -35,13 +28,6 @@ func NewControllerManagerCommand(ctx context.Context) *cobra.Command {
 		Use:   "puller",
 		Short: "puller is a controller for pull private image",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Activate logging as soon as possible, after that
-			// show flags with the final logging configuration.
-			if err := logsapi.ValidateAndApply(o.Logs, utilfeature.DefaultFeatureGate); err != nil {
-				return err
-			}
-			cliflag.PrintFlags(cmd.Flags())
-
 			if errs := o.Validate(); len(errs) != 0 {
 				return errs.ToAggregate()
 			}
@@ -63,11 +49,7 @@ func NewControllerManagerCommand(ctx context.Context) *cobra.Command {
 	genericFlagSet.Lookup("kubeconfig").Usage = "Paths to a kubeconfig. Only required if out-of-cluster."
 	o.AddFlags(genericFlagSet)
 
-	logsFlagSet := fss.FlagSet("logs")
-	logsapi.AddFlags(o.Logs, logsFlagSet)
-
 	cmd.Flags().AddFlagSet(genericFlagSet)
-	cmd.Flags().AddFlagSet(logsFlagSet)
 	return cmd
 }
 
