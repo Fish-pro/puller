@@ -1,8 +1,6 @@
 package options
 
 import (
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/spf13/pflag"
@@ -10,12 +8,9 @@ import (
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	componentbaseconfig "k8s.io/component-base/config"
 	"k8s.io/component-base/config/options"
-	"k8s.io/component-base/logs"
 )
 
 type Options struct {
-	// Controllers contains all controller names.
-	Controllers []string
 	// LeaderElection defines the configuration of leader election client.
 	LeaderElection componentbaseconfig.LeaderElectionConfiguration
 	// metricsAddr define the metrics addr
@@ -34,14 +29,10 @@ type Options struct {
 	// ConcurrentPullerSyncs is the number of puller objects that are
 	// allowed to sync concurrently.
 	ConcurrentPullerSyncs int
-
-	Logs *logs.Options
 }
 
 func NewOptions() *Options {
 	return &Options{
-		Controllers: []string{"*"},
-		Logs:        logs.NewOptions(),
 		LeaderElection: componentbaseconfig.LeaderElectionConfiguration{
 			LeaderElect:       true,
 			LeaseDuration:     metav1.Duration{Duration: 15 * time.Second},
@@ -54,14 +45,10 @@ func NewOptions() *Options {
 	}
 }
 
-func (o *Options) AddFlags(fs *pflag.FlagSet, allControllers []string) {
+func (o *Options) AddFlags(fs *pflag.FlagSet) {
 	if o == nil {
 		return
 	}
-	fs.StringSliceVar(&o.Controllers, "controllers", []string{"*"}, fmt.Sprintf(
-		"A list of controllers to enable. '*' enables all on-by-default controllers, 'foo' enables the controller named 'foo', '-foo' disables the controller named 'foo'. All controllers: %s.",
-		strings.Join(allControllers, ", "),
-	))
 	fs.StringVar(&o.MetricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	fs.StringVar(&o.ProbeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	fs.Float32Var(&o.KubeAPIQPS, "kube-api-qps", 40.0, "QPS to use while talking with karmada-apiserver. Doesn't cover events and node heartbeat apis which rate limiting is controlled by a different set of flags.")
